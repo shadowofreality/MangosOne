@@ -1636,6 +1636,22 @@ void Aura::TriggerSpell()
 //                }
 //                break;
 //            }
+			case SPELLFAMILY_WARLOCK:
+			{
+				Unit* caster = GetCaster();
+				switch (auraId)
+				{
+					case 1120:
+					case 8828:
+					case 8289:
+					case 11675:
+					case 27217:
+						caster->HandleEmote(17);
+					return;
+
+				}
+				break;
+			}
             case SPELLFAMILY_DRUID:
             {
                 switch (auraId)
@@ -2777,7 +2793,9 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
 
             // and polymorphic affects
             if (target->IsPolymorphed())
-                { target->RemoveAurasDueToSpell(target->GetTransform()); }
+            { 
+				target->RemoveAurasDueToSpell(target->GetTransform()); 
+			}
 
             //no break here
         }
@@ -3105,7 +3123,6 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
         // ApplyModifier(true) will reapply it if need
         target->SetTransform(0);
         target->SetDisplayId(target->GetNativeDisplayId());
-
         // apply default equipment for creature case
         if (target->GetTypeId() == TYPEID_UNIT)
             { ((Creature*)target)->LoadEquipment(((Creature*)target)->GetCreatureInfo()->EquipmentTemplateId, true); }
@@ -3201,14 +3218,6 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
             { return; }
 
-        // Soul Shard (target req.)
-        if (spellInfo->EffectItemType[m_effIndex] == 6265)
-        {
-            // Only from non-grey units
-            if (!((Player*)caster)->isHonorOrXPTarget(victim) ||
-                (victim->GetTypeId() == TYPEID_UNIT && !((Player*)caster)->isAllowedToLoot((Creature*)victim)))
-                { return; }
-        }
 
         // Adding items
         uint32 noSpaceForCount = 0;
@@ -6006,7 +6015,8 @@ void Aura::PeriodicTick()
             pCaster->ProcDamageAndSpell(target, procAttacker, procVictim, PROC_EX_NORMAL_HIT, pdamage, BASE_ATTACK, spellProto);
 
             pCaster->DealDamage(target, pdamage, &cleanDamage, DOT, GetSpellSchoolMask(spellProto), spellProto, true);
-            break;
+            			
+			break;
         }
         case SPELL_AURA_PERIODIC_LEECH:
         case SPELL_AURA_PERIODIC_HEALTH_FUNNEL:
