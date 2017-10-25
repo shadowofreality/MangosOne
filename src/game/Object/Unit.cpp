@@ -9184,7 +9184,9 @@ void Unit::SetFeared(bool apply, ObjectGuid casterGuid, uint32 spellID, uint32 t
 
         Unit* caster = IsInWorld() ?  GetMap()->GetUnit(casterGuid) : NULL;
 
+		addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
         GetMotionMaster()->MoveFleeing(caster, time);       // caster==NULL processed in MoveFleeing
+		GetHostileRefManager().deleteReferences();
     }
     else
     {
@@ -9216,39 +9218,45 @@ void Unit::SetFeared(bool apply, ObjectGuid casterGuid, uint32 spellID, uint32 t
 
 void Unit::SetConfused(bool apply, ObjectGuid casterGuid, uint32 spellID)
 {
-    if (apply)
-    {
-         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
+	if (apply)
+	{
+		SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
-         GetMotionMaster()->MovementExpired(false);
-         CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
+		GetMotionMaster()->MovementExpired(false);
+		CastStop(GetObjectGuid() == casterGuid ? spellID : 0);
 
-         if (GetTypeId() == TYPEID_UNIT)
-             SetTargetGuid(ObjectGuid());
+		if (GetTypeId() == TYPEID_UNIT)
+			SetTargetGuid(ObjectGuid());
+		
+		addUnitState(UNIT_STAT_NO_COMBAT_MOVEMENT);
+		GetMotionMaster()->MoveConfused();
+		GetHostileRefManager().deleteReferences();
+	}
+	else
+	{
+		RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
-        GetMotionMaster()->MoveConfused();
-    }
-    else
-    {
-         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
+		GetMotionMaster()->MovementExpired(false);
 
-         GetMotionMaster()->MovementExpired(false);
+		if (GetTypeId() != TYPEID_PLAYER && IsAlive())
+		{
+			// restore appropriate movement generator
+			if (getVictim())
+			{
+				SetTargetGuid(getVictim()->GetObjectGuid());
+				GetMotionMaster()->MoveChase(getVictim());
+			}
+			else
+			{
+				GetMotionMaster()->Initialize();
+			}
+		}
+	}
 
-         if (GetTypeId() != TYPEID_PLAYER && IsAlive())
-         {
-         // restore appropriate movement generator
-                if (getVictim())
-                {
-                       SetTargetGuid(getVictim()->GetObjectGuid());
-                       GetMotionMaster()->MoveChase(getVictim());
-                 }
-                 else
-                 { GetMotionMaster()->Initialize(); }
-          }
-    }
-
-    if (GetTypeId() == TYPEID_PLAYER)
-        { ((Player*)this)->SetClientControl(this, !apply); }
+	if (GetTypeId() == TYPEID_PLAYER)
+	{
+		((Player*)this)->SetClientControl(this, !apply);
+	}
 }
 
 void Unit::SetFeignDeath(bool apply, ObjectGuid casterGuid /*= ObjectGuid()*/)
@@ -9344,7 +9352,7 @@ void Unit::SetStandState(uint8 state)
 
 bool Unit::IsPolymorphed() const
 {
-    return GetSpellSpecific(GetTransform()) == SPELL_MAGE_POLYMORPH;
+	return GetSpellSpecific(GetTransform()) == SPELL_MAGE_POLYMORPH;
 }
 
 void Unit::SetDisplayId(uint32 modelId)
